@@ -14,6 +14,9 @@ import bisect
 
 class Dither:
     
+    def say_hello():
+        print "Hello :)"
+    
     def __init__(self,ideal,height,pheight,n1,n2):
         self.height=height
         
