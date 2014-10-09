@@ -20,6 +20,10 @@ class Zernike:
     z.image() will create a colored image representing z.opd
     '''
     
+
+    def fun_stuff():
+	print "Horray"
+
     def delta(a,b):
         if a == b:
             return 1
