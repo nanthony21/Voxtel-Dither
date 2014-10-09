@@ -6,3 +6,5 @@ Bugs:
 Fix freeze when N2<N1
 Instead of minimal layers it should be optimal layers
 make the height field automatically update with the number of optimal layers.
+
+Delete functionality for "packed" layers
