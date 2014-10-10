@@ -14,9 +14,6 @@ import bisect
 
 class Dither:
     
-    def say_hello():
-        print "Hello :)"
-    
     def __init__(self,ideal,height,pheight,n1,n2):
         self.height=height
         
@@ -71,6 +68,7 @@ class Dither:
                     self.quantized[i,j]=None
                 else:
                     self.quantized[i,j]=self.__quantizer(self.idealn[i,j],self.possiblevalues)
+                   
     def __floyddither(self):
         '''
         This takes the ideal OPD and quantizes it and dithers it based on the number available
@@ -83,19 +81,25 @@ class Dither:
                 if np.isnan(self.idealn[i,j]):
                     self.dithered[i,j]=None
                 else:
-                    old=1*self.dithered[i,j]            
                     new=self.__quantizer(self.dithered[i,j],self.possiblevalues)
-                    self.dithered[i,j]=1*new            
-                    qerror=old-new
-                    if j<=(self.xpix-2):
-                        self.dithered[i,j+1]=self.dithered[i,j+1]+qerror*7/16
-                    if i<=(self.ypix-2) and j>=(1):
-                        self.dithered[i+1,j-1]=self.dithered[i+1,j-1]+qerror*3/16
-                    if i<=(self.ypix-2):
-                        self.dithered[i+1,j]=self.dithered[i+1,j]+qerror*5/16
-                    if i<=(self.ypix-2) and j<=(self.xpix-2):
-                        self.dithered[i+1,j+1]=self.dithered[i+1,j+1]+qerror*1/16
-                    
+                    qerror=self.dithered[i,j]-new
+                    self.dithered[i,j]=1*new
+                    try:
+                        self.dithered[i,j+1]=self.dithered[i,j+1]+qerror*0.4375
+                    except IndexError:
+                        pass                   
+                    try:
+                        self.dithered[i+1,j-1]=self.dithered[i+1,j-1]+qerror*0.1875
+                    except IndexError:
+                        pass                    
+                    try:
+                        self.dithered[i+1,j]=self.dithered[i+1,j]+qerror*0.3125
+                    except IndexError:
+                        pass                    
+                    try:
+                        self.dithered[i+1,j+1]=self.dithered[i+1,j+1]+qerror*0.0625
+                    except IndexError:
+                        pass
     
     def __possibilities(self,inputarray):
         def combos():
@@ -204,7 +208,6 @@ class Dither:
     def savelayers(self, directory):
         n1Data = self.data
         n2Data = self.data==False        
-        l = len(n1Data)        
                         
         for i in range(self.height):
             misc.imsave(directory + '\layer %d (n1).bmp'%(i+1),n1Data[:,:,i].astype(int))
@@ -222,16 +225,8 @@ class Dither:
          ax.imshow(self.idealn)
          ax2.imshow(self.quantized)
          ax3.imshow(self.dithered)
-        
-    def qerrorimage(self):
-        '''
-        plots an image of the the original OPD minus the dithered OPD, it is a
-        representation of the quantization error.
-        '''
-        fig=plt.figure()
-        ax=fig.add_subplot(1,1,1)
-        p=ax.imshow(self.idealn-self.dithered,interpolation='none')
-        plt.colorbar(p,ax=ax)
+         
+
         
     def __quantizer(self,num, quant):
         mids = [(quant[i] + quant[i + 1]) / 2.0
@@ -239,5 +234,15 @@ class Dither:
         ind = bisect.bisect_right(mids, num)
     
         return quant[ind]
+        
+        
+def examplegauss(res,sigma):
+    gauss=np.zeros((res,res))
+    for i in range(res):
+        for j in range(res):
+            r2=(i-res/2)**2+(j-res/2)**2
+            gauss[i,j]=np.exp(-r2/(2*sigma**2))
+    return gauss
+        
       
 

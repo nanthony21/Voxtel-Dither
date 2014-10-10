@@ -19,10 +19,6 @@ class Zernike:
     
     z.image() will create a colored image representing z.opd
     '''
-    
-
-    def fun_stuff():
-	print "Horray"
 
     def delta(a,b):
         if a == b:
@@ -30,7 +26,7 @@ class Zernike:
         else:
             return 0
     
-    def __init__(self,cofs,wavelength,res):
+    def __init__(self,cofs,wavelength,res,correcting=False):
         t = time.time()
         self.xres = self.yres = res                
         X = np.linspace(-1,1,self.xres)
@@ -51,8 +47,11 @@ class Zernike:
                
         self.wf[self.r > 1] = None
         
+        if correcting==True:
+            self.wf=-1*self.wf
+        
         nanmin=np.nanmin(self.wf)
-        self.opd=((-self.wf-nanmin)*self.wavelength)
+        self.opd=((self.wf-nanmin)*self.wavelength)
         self.params = [self.opd, self.x, self.y]
           
     
