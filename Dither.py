@@ -6,10 +6,10 @@ Created on Fri Aug 01 15:43:31 2014
 """
 
 from __future__ import division
-import scipy as sp, numpy as np, matplotlib.pyplot as plt
+import numpy as np, matplotlib.pyplot as plt
 from scipy import misc
-from random import randrange
 import bisect
+
 
 
 class Dither:
@@ -31,29 +31,7 @@ class Dither:
         self.idealn=self.ideal/(self.height*self.pheight)+self.n1
         self.__floyddither()
     
-    def calc3d(self,lim=None):
-        '''
-        This function performs the more time consuming 3d dimensional calculations.
-        Since they may not always be needed they are not automatically performed.
-        This function will need to be run before printlayers() or savelayer() can be
-        performed or the "data" array can be accesed.
-        '''
-        self.lim=lim
-        self.__possibilities(self.dithered)
-        self.__selection1()
         
-    def calc3dfast(self):
-        '''
-        This function determines x1, the number of n1 dots required for each pixel.
-        It then creates the 3d array, data, that contains either 1 or 0 where 1 represents an n1 voxel
-        and a 0 represents a n2 voxel. All the n1 voxels are stacked at the bottom with all the n2 voxels
-        stacked on top.
-        '''
-        self.x1=np.uint8(np.round(self.height*(self.dithered-self.n2)/(self.n1-self.n2)))
-        self.data=sp.zeros([self.ypix,self.xpix,self.height],dtype=np.uint8)
-        for i in xrange(self.height):
-            self.data[:,:,i][self.x1>=i] = 1
-
      
     def __quantize(self):
         '''       
@@ -101,109 +79,26 @@ class Dither:
                     except IndexError:
                         pass
     
-    def __possibilities(self,inputarray):
-        def combos():
-            '''
-            Given one argument, height, which is essentially bitdepth, this function returns two things.
-            It returns "combos", a list of lists of list combinations.
-            It also returns "numadj", the number of adjacent identical bits in the corresponding combo.
-            
-            These are both automatically sorted so that the combos with the lowest numadj come first.
-            They both follow the same indexing scheme. If the first index is "i", then you have selecte
-            the list of combos for which there are "i" HIGH bits. The next index selects the particular
-            combo that you are interested in. Presumably you will prefer the combos with the lower second
-            indexes because they have less adjacent like bits and are therefore better
-            as far as dithering is concerned.
-            
-            The optional "lim" argument throws away unwanted combinations. For example, if "lim"=2 then only the combinations
-            with the two lowest numadj in the set are returned. 
-            
-            "lim" must be less than "height" and they must both be integers.
-            '''
-        
-            def comboadjnum(combo):
-                n=[]
-                for i in range(len(combo)):  
-                    n.append([])
-                    for j in range(len(combo[i])):        
-                        b=2  
-                        a=0
-                        for k in combo[i][j]:
-                            if k==b:
-                                a+=1
-                            b=k
-                        n[i].append(a)
-                return n
-            
-            def combo():
-                def binarize(num,length):
-                    a=bin(num)[2:]
-                    b=len(a)
-                    c=sp.zeros(length,dtype=np.uint8)
-                    for i in range(b):
-                        c[-(i+1)]=a[-(i+1)]
-                    return list(c)
-                dotnum=[[]for x in xrange(self.height+1)]
-                for j in xrange(2**self.height):
-                    bina=binarize(j,self.height)
-                    dotnum[sum(bina)].append(bina)
-                return dotnum
-            
-            
-            #this sorts the combos in order of numadj
-            combos=[]   
-            numadj=[]
-            c=combo()
-            n=comboadjnum(c)
-            for i in range(len(c)):    
-                b=sorted(zip(n[i],c[i]))
-                combos.append([point[1] for point in b])
-                numadj.append([point[0] for point in b])
-            
-            if self.lim:    
-                combolim=[[] for x in xrange(len(combos))]
-                numadjlim=[[] for x in xrange(len(combos))]
-                for i in range(len(combos)):
-                    limnum=(list(set(numadj[i]))+[self.height-1]*(self.height-self.lim))[self.lim-1]
-                
-                    for j in xrange(len(combos[i])):
-                         if numadj[i][j]<=limnum:
-                             combolim[i].append(combos[i][j])
-                             numadjlim[i].append(numadj[i][j])
-                combos=combolim
-                numadj=numadjlim
-            return combos,numadj        
-        
-        
-        
-        
-        #determines x1, the number of n1 dots required for each pixel.
-        self.x1=np.uint8(np.round(self.height*(inputarray-self.n2)/(self.n1-self.n2)))
-        co=combos()[0]
+    def calc3d(self):         
+              
+
+        self.x1=np.uint8(np.round(self.height*(self.dithered-self.n2)/(self.n1-self.n2)))
     
-        #generates 2d array of all possible combo lists
-        self.possibilities=sp.zeros(inputarray.shape,dtype='O')
-        for y in xrange(self.ypix): 
-            for x in xrange(self.xpix):
-                self.possibilities[y,x]=co[self.x1[y,x]]
+        self.data=(self.x1[...,np.newaxis]>np.arange(self.height)).astype(int)       
+        
+        self.data=self.data.swapaxes(-1,-1)
+        shp=self.data.shape[:-1]
+        for ndx in np.ndindex(shp):
+            np.random.shuffle(self.data[ndx])
     
-    def __selection1(self):
-        '''
-        This creates  the 3d array, Data, by selecting out one of the 1d possibility
-        arrays to be used for each of the values of the 2d array, Dithered.
-        '''
-        self.data=sp.zeros([self.ypix,self.xpix,self.height],dtype=np.uint8)
-        for y in xrange(self.ypix): 
-            for x in xrange(self.xpix):
-                self.data[y,x]=self.possibilities[y,x][randrange(len(self.possibilities[y,x]))]
-    
+        
     
     def printlayers(self):
         #shows each layers image.
         for i in range(self.height):
             plt.figure()    
             plt.imshow(self.data[:,:,i],interpolation='none',cmap='gray')
-            plt.show()
+        plt.show()
     
     def savelayers(self, directory):
         n1Data = self.data
