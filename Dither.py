@@ -77,7 +77,7 @@ class Dither:
         self.x1=np.uint8(np.round(self.height*(self.dithered-self.n2)/(self.n1-self.n2)))
     
         self.data=np.uint8(self.x1[...,np.newaxis]>np.arange(self.height))       
-        
+        self.x1=None
         self.data=self.data.swapaxes(-1,-1)
         shp=self.data.shape[:-1]
         for ndx in np.ndindex(shp):
@@ -97,8 +97,9 @@ class Dither:
         n2Data = self.data==False        
                         
         for i in range(self.height):
-            misc.imsave(directory + '\layer %d (n1).bmp'%(i+1),n1Data[:,:,i].astype(int))
-            misc.imsave(directory + '\layer %d (n2).bmp'%(i+1),n2Data[:,:,i].astype(int))
+            n1Data = self.data[:,:,i]
+            misc.imsave(directory + '\layer %d (n1).bmp'%(i+1),n1Data[:,:].astype(int))
+            misc.imsave(directory + '\layer %d (n2).bmp'%(i+1),(n1Data[:,:]==False).astype(int))
      
     def image(self):
          '''
