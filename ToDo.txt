@@ -9,8 +9,6 @@ make the height field automatically update with the number of optimal layers.
 
 Delete functionality for "packed" layers
 
-Is composite broken?
-
 use new N values
 
 create text display window to display errors as well as other printouts such as task progress indications
