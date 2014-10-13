@@ -17,12 +17,12 @@ class Dither:
     def __init__(self,ideal,height,pheight,n1,n2):
         self.height=height
         
-        ideal=ideal-np.nanmin(ideal)
-        ypix=ideal.shape[0]
-        xpix=ideal.shape[1]
-        pheight=pheight
-        n1=n1
-        n2=n2
+        self.ideal=ideal-np.nanmin(ideal)
+        self.ypix=ideal.shape[0]
+        self.xpix=ideal.shape[1]
+        self.pheight=pheight
+        self.n1=n1
+        self.n2=n2
         if n1>n2:
             raise ValueError('N2 must be greater than N1')
         self.possiblevalues=[]
@@ -43,12 +43,11 @@ class Dither:
         '''
         self.dithered=1*self.idealn
         
-        mids = [(possiblevalues[i] + possiblevalues[i + 1]) / 2.0 for i in xrange(len(possiblevalues) - 1)]       
+        mids = [(self.possiblevalues[i] + self.possiblevalues[i + 1]) / 2.0 for i in xrange(len(self.possiblevalues) - 1)]       
         
-        for i in xrange(ypix):
-            self.__status(i,ypix)
-            for j in xrange(xpix):
-                if np.isnan(idealn[i,j]):
+        for i in xrange(self.ypix):
+            for j in xrange(self.xpix):
+                if np.isnan(self.idealn[i,j]):
                     self.dithered[i,j]=None
                 else:
                     ind = bisect.bisect_right(mids, self.dithered[i,j])
@@ -83,7 +82,7 @@ class Dither:
         shp=self.data.shape[:-1]
         for ndx in np.ndindex(shp):
             np.random.shuffle(self.data[ndx])
-            
+    
         
     
     def printlayers(self):
@@ -112,10 +111,9 @@ class Dither:
          ax.imshow(self.idealn)
          ax3.imshow(self.dithered)
          
-    def __status(self,currentnumber,finalnumber):
-        if currentnumber%(self.ypix/20)==0:
-            print '%d'%((currentnumber)/finalnumber*100)+'%' 
-            
+
+        
+        
         
 def examplegauss(res,sigma):
     gauss=np.zeros((res,res))
