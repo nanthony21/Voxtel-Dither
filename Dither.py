@@ -33,19 +33,7 @@ class Dither:
     
         
      
-    def __quantize(self):
-        '''       
-        given "ideal", the numpy array representing the ideal image in the transverse plane,
-        "height", the number of printed layers (bit depth), and "n1" and "n2" the two
-        possible values for each voxel, this function creates a quantized version of ideal.
-        '''        
-        self.quantized=1*self.idealn
-        for i in xrange(self.ypix):
-            for j in xrange(self.xpix):
-                if np.isnan(self.idealn[i,j]):
-                    self.quantized[i,j]=None
-                else:
-                    self.quantized[i,j]=self.__quantizer(self.idealn[i,j],self.possiblevalues)
+
                    
     def __floyddither(self):
         '''
@@ -54,12 +42,16 @@ class Dither:
         Based on psuedo code found at http://en.wikipedia.org/wiki/Floyd%E2%80%93Steinberg_dithering
         '''
         self.dithered=1*self.idealn
+        
+        mids = [(self.possiblevalues[i] + self.possiblevalues[i + 1]) / 2.0 for i in xrange(len(self.possiblevalues) - 1)]       
+        
         for i in xrange(self.ypix):
             for j in xrange(self.xpix):
                 if np.isnan(self.idealn[i,j]):
                     self.dithered[i,j]=None
                 else:
-                    new=self.__quantizer(self.dithered[i,j],self.possiblevalues)
+                    ind = bisect.bisect_right(mids, self.dithered[i,j])
+                    new=self.possiblevalues[ind]                    
                     qerror=self.dithered[i,j]-new
                     self.dithered[i,j]=1*new
                     try:
@@ -84,7 +76,7 @@ class Dither:
 
         self.x1=np.uint8(np.round(self.height*(self.dithered-self.n2)/(self.n1-self.n2)))
     
-        self.data=(self.x1[...,np.newaxis]>np.arange(self.height)).astype(int)       
+        self.data=np.uint8(self.x1[...,np.newaxis]>np.arange(self.height))       
         
         self.data=self.data.swapaxes(-1,-1)
         shp=self.data.shape[:-1]
@@ -112,23 +104,15 @@ class Dither:
          '''
          plots an images showing the original OPD, the quantized OPD, and the dithered OPD.
          '''
-         self.__quantize()
+
          fig=plt.figure()
          ax=fig.add_subplot(2,2,1)
-         ax2=fig.add_subplot(2,2,2)
          ax3=fig.add_subplot(2,2,3)
          ax.imshow(self.idealn)
-         ax2.imshow(self.quantized)
          ax3.imshow(self.dithered)
          
 
         
-    def __quantizer(self,num, quant):
-        mids = [(quant[i] + quant[i + 1]) / 2.0
-                for i in xrange(len(quant) - 1)]
-        ind = bisect.bisect_right(mids, num)
-    
-        return quant[ind]
         
         
 def examplegauss(res,sigma):

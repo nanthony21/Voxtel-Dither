@@ -15,4 +15,6 @@ use new N values
 
 create text display window to display errors as well as other printouts such as task progress indications
 
-remove 3d plotting
+Speed up 3d plotting
+
+only create images on demand to save ram.
