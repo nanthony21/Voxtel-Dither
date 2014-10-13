@@ -314,7 +314,7 @@ class Zplot(QMainWindow):
                 self.zernikeCanvas.draw()
             else:
                 self.__generate_3d_axes()
-                self.zernikeAxes3d.plot_surface(self.z.x,self.z.y,self.z.opd)#,cstride=self.z.opd.shape[0]//50,rstride=self.z.opd.shape[1]//50,linewidth=0, extent = (0,self.diameter,0,self.diameter))
+                self.zernikeAxes3d.plot_surface(self.z.x,self.z.y,self.z.opd,cstride=self.z.opd.shape[0]//50,rstride=self.z.opd.shape[1]//50,linewidth=0)
                 self.zernikeFig.hold(False)
                 self.zernikeCanvas.draw()
         
