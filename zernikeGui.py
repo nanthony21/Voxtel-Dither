@@ -42,7 +42,7 @@ class Zplot(QMainWindow):
         self.diameter = 50
         self.xRes = self.yRes = int(self.diameter*1000/self.voxelSize)
         self.height = 13
-        self.pheight = 20000
+        self.voxelsize = 20000
         self.n1 = 1.5-0.021
         self.n2 = 1.5+0.021
         self.is3d = False
@@ -69,7 +69,7 @@ class Zplot(QMainWindow):
         f = open(filename,'w')
         
         self.params = [self.cofs, self.wavelength, self.height, self.n1, 
-                       self.n2, self.xRes, self.yRes,self.pheight]
+                       self.n2, self.xRes, self.yRes,self.voxelsize]
         
         
         for i in self.params:
@@ -99,7 +99,7 @@ class Zplot(QMainWindow):
         self.n2 = float(f.readline())
         self.xRes = int(f.readline())
         self.yRes = int(f.readline())
-        self.pheight = int(f.readline())
+        self.voxelsize = int(f.readline())
         self.update_boxes()
         print f.readlines()
 
@@ -107,6 +107,7 @@ class Zplot(QMainWindow):
     def update_values(self):
         """Queries all text boxes and updates the system parameters"""
         self.voxelSize = float(self.voxelSizeBox.text())
+        self.voxelsize=self.voxelSize*1000
         self.diameter = float(self.diameterBox.text())
         self.xRes = self.yRes = int(self.diameter*1000/self.voxelSize)
         self.wavelength = float(self.wavelengthBox.text())
@@ -256,11 +257,11 @@ class Zplot(QMainWindow):
         self.status.showMessage(self.calcMessage)
         
         #try:
-        self.d = dither.Dither(self.z.opd, self.height,self.pheight,self.n1,self.n2)                 
+        self.d = dither.Dither(self.z.opd, self.height,self.voxelsize,self.n1,self.n2)                 
         
         """except:        
             self.d = dither.Dither(self.z.opd,
-                               self.height,self.pheight,
+                               self.height,self.voxelsize,
                                self.n1,self.n2)"""
         
         print self.d.height
@@ -277,7 +278,7 @@ class Zplot(QMainWindow):
     """def slice_layers(self):
         self.toggle(0)
         self.update_values()   
-        self.s = sl.Slice(self.z.opd,self.height,self.pheight,self.n1,self.n2)
+        self.s = sl.Slice(self.z.opd,self.height,self.voxelsize,self.n1,self.n2)
         self.__generate_slice_axes()
         image = self.sliceAxes1.imshow(self.s.total)
         self.sliceFig.colorbar(image,self.sliceAxes2)
@@ -334,10 +335,12 @@ class Zplot(QMainWindow):
                 self.cofs[i] = 0;        
         self.z = zernike.Zernike(self.cofs, self.wavelength,self.xRes)
         
-        idealLayers = self.minheight(np.nanmax(self.z.opd)-np.nanmin(self.z.opd),self.pheight,self.n1,self.n2)
-        self.idealLayersLabel.setText("Minimum Ideal Layers: "+str(int(np.ceil(idealLayers))))
+        idealLayers = self.minheight(np.nanmax(self.z.opd)-np.nanmin(self.z.opd),self.voxelsize,self.n1,self.n2)
+        self.idealLayersLabel.setText("Optimum Layer #: "+str(int(np.ceil(idealLayers))))
         self.isCalculated = True
         self.plot_zernike(self.dimensionMenu.currentIndex())
+        
+        print idealLayers
         self.toggle(1)
         
    
