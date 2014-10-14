@@ -14,3 +14,17 @@ use new N values
 create text display window to display errors as well as other printouts such as task progress indications
 
 remove 3d plotting
+
+add option to input fringe coeffs
+
+normalization diameter
+
+
+when exporting save a text file with info.
+
+
+voxel size and diameter are not saved.
+
+voxel size is not considered in optimum layer calculation.
+
+add option for fringe or standard coeffs.
