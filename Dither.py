@@ -21,10 +21,14 @@ class Dither:
         self.ypix=ideal.shape[0]
         self.xpix=ideal.shape[1]
         
+        #Delete these later
+        self.normradius=27
+        self.printradius=25.4        
+        
         X = np.linspace(-1,1,self.xpix)
         Y = np.linspace(-1,1,self.ypix)
         x, y =np.meshgrid(X,Y)
-        self.r =np.sqrt(x**2+y**2)        
+        self.r =self.normradius*np.sqrt(x**2+y**2)        
         
         
         self.pheight=pheight
@@ -34,7 +38,7 @@ class Dither:
         self.aperind=[]
         for i in range(self.ypix):
             for j in range(self.xpix):
-                if self.r[i,j]<=1:
+                if self.r[i,j]<=self.printradius:
                     self.aperind.append((i,j))    
         
         if n1>n2:
@@ -84,6 +88,7 @@ class Dither:
                         self.dithered[i+1,j+1]=self.dithered[i+1,j+1]+qerror*0.0625
                     except IndexError:
                         pass
+        self.dithered[self.r>self.printradius]=self.n1
     
     def calc3d(self):         
               
@@ -101,7 +106,8 @@ class Dither:
     def printlayers(self):
         #shows each layers image.
         for i in range(self.height):
-            plt.figure()    
+            self.data[self.r>self.printradius]=1            
+            plt.figure()  
             plt.imshow(self.data[:,:,i],interpolation='none',cmap='gray')
         plt.show()
     
@@ -110,7 +116,8 @@ class Dither:
         for i in range(self.height):
             n1data = self.data[:,:,i]
             n2data=n1data==False
-            n1data[self.r>1]=1
+            n1data[self.r>self.printradius]=1
+            n2data[self.r>self.printradius]=1
             misc.imsave(directory + '\layer %d (n1).bmp'%(i+1),n1data.astype(int))
             misc.imsave(directory + '\layer %d (n2).bmp'%(i+1),n2data.astype(int))
      
