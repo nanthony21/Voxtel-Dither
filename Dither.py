@@ -20,9 +20,23 @@ class Dither:
         self.ideal=ideal-np.nanmin(ideal)
         self.ypix=ideal.shape[0]
         self.xpix=ideal.shape[1]
+        
+        X = np.linspace(-1,1,self.xpix)
+        Y = np.linspace(-1,1,self.ypix)
+        x, y =np.meshgrid(X,Y)
+        self.r =np.sqrt(x**2+y**2)        
+        
+        
         self.pheight=pheight
         self.n1=n1
         self.n2=n2
+        
+        self.aperind=[]
+        for i in range(self.ypix):
+            for j in range(self.xpix):
+                if self.r[i,j]<=1:
+                    self.aperind.append((i,j))    
+        
         if n1>n2:
             raise ValueError('N2 must be greater than N1')
         self.possiblevalues=[]
@@ -74,13 +88,12 @@ class Dither:
     def calc3d(self):         
               
 
-        self.x1=np.uint8(np.round(self.height*(self.dithered-self.n2)/(self.n1-self.n2)))
+        self.x1=np.uint16(np.round(self.height*(self.dithered-self.n2)/(self.n1-self.n2)))
     
         self.data=np.uint8(self.x1[...,np.newaxis]>np.arange(self.height))       
         self.x1=None
         self.data=self.data.swapaxes(-1,-1)
-        shp=self.data.shape[:-1]
-        for ndx in np.ndindex(shp):
+        for ndx in self.aperind:
             np.random.shuffle(self.data[ndx])
     
         
@@ -93,13 +106,13 @@ class Dither:
         plt.show()
     
     def savelayers(self, directory):
-        n1Data = self.data
-        n2Data = self.data==False        
                         
         for i in range(self.height):
-            n1Data = self.data[:,:,i]
-            misc.imsave(directory + '\layer %d (n1).bmp'%(i+1),n1Data[:,:].astype(int))
-            misc.imsave(directory + '\layer %d (n2).bmp'%(i+1),(n1Data[:,:]==False).astype(int))
+            n1data = self.data[:,:,i]
+            n2data=n1data==False
+            n1data[self.r>1]=1
+            misc.imsave(directory + '\layer %d (n1).bmp'%(i+1),n1data.astype(int))
+            misc.imsave(directory + '\layer %d (n2).bmp'%(i+1),n2data.astype(int))
      
     def image(self):
          '''

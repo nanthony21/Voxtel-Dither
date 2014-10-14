@@ -26,7 +26,7 @@ class Zernike:
         else:
             return 0
     
-    def __init__(self,cofs,wavelength,res,correcting=False):
+    def __init__(self,cofs,wavelength,res,correcting=False,fringe=True):
         t = time.time()
         self.xres = self.yres = res                
         X = np.linspace(-1,1,self.xres)
@@ -40,10 +40,11 @@ class Zernike:
         self.theta = np.arctan2(self.y,self.x)
         self.wf=sp.zeros((self.yres,self.xres))
         
-        
         for i in range(37):
-            if self.cofs[i]!=0:
+            if self.cofs[i]!=0 and fringe==False:
                self.wf+= self.cofs[i]*getattr(self,'z%g'%i)(self.r,self.theta)
+            if self.cofs[i]!=0 and fringe==True:
+               self.wf+= self.cofs[i]*getattr(self,'zf%g'%i)(self.r,self.theta)
                
         self.wf[self.r > 1] = None
         
@@ -131,16 +132,56 @@ class Zernike:
     def z36(self,r,theta):
         return np.sqrt (9)*(70*r**8-140*r**6+90*r**4-20*r**2+1)
         
-        
-        
-           
-    
-    
-    """def __unitaperture(self):
-        for i in range(self.yres):
-            for j in range(self.xres):
-                if self.r[i,j]>1:
-                    self.wf[i,j]=None"""
+    def zf0(self,r,theta):
+        return 1    
+    def zf1(self,r,theta):
+        return r*np.cos(theta)
+    def zf2(self,r,theta):
+        return r*np.sin(theta)        
+    def zf3(self,r,theta):
+        return 2*r**2-1
+    def zf4(self,r,theta):
+        return r**2*np.cos(2*theta)
+    def zf5(self,r,theta):
+        return r**2*np.sin(2*theta)  
+    def zf6(self,r,theta):
+        return (3*r**2-2)*r*np.cos(theta)
+    def zf7(self,r,theta):
+        return (3*r**2-2)*r*np.sin(theta)
+    def zf8(self,r,theta):
+        return 6*r**4-6*r**2+1
+    def zf9(self,r,theta):
+        return r**3*np.cos(3*theta)
+    def zf10(self,r,theta):
+        return r**3*np.sin(3*theta)
+    def zf11(self,r,theta):
+        return (4*r**2-3)*r**2*np.cos(2*theta)
+    def zf12(self,r,theta):
+        return (4*r**2-3)*r**2*np.sin(2*theta)
+    def zf13(self,r,theta):
+        return (10*r**4-12*r**2+3)*r*np.cos(theta)
+    def zf14(self,r,theta):
+        return (10*r**4-12*r**2+3)*r*np.sin(theta)
+    def zf15(self,r,theta):
+        return (20*r**6-30*r**4+12*r**2-1)
+    def zf16(self,r,theta):
+        return r**4*np.cos(4*theta)
+    def zf17(self,r,theta):
+        return r**4*np.sin(4*theta)
+    def zf18(self,r,theta):
+        return (5*r**2-4)*r**3*np.cos(3*theta)
+    def zf19(self,r,theta):
+        return (5*r**2-4)*r**3*np.sin(3*theta)
+    def zf20(self,r,theta):
+        return (15*r**4-20*r**2+6)*r**2*np.cos(2*theta)
+    def zf21(self,r,theta):
+        return (15*r**4-20*r**2+6)*r**2*np.sin(2*theta)
+    def zf22(self,r,theta):
+        return (35*r**6-60*r**4+30*r**2-4)*r*np.cos(theta)
+    def zf23(self,r,theta):
+        return (35*r**6-60*r**4+30*r**2-4)*r*np.sin(theta)
+    def zf24(self,r,theta):
+        return 70*r**8-140*r**6+90*r**4-20*r**2+1
                     
 
     def plot3d(self):
