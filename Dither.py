@@ -106,7 +106,13 @@ class Dither:
         plt.show()
     
     def savelayers(self, directory):
-                        
+        with open(directory+'Details.txt','w') as text_file:
+            text_file.write('n1=%.4f\n'%self.n1)
+            text_file.write('n2=%.4f\n'%self.n2)
+            text_file.write('Diameter(pixels)=%d\n'%self.ypix)
+            text_file.write('Voxel Height=%.2f\n'%self.pheight)
+            text_file.write('Layers=%.d\n'%self.height)
+
         for i in range(self.height):
             n1data = self.data[:,:,i]
             n2data=n1data==False

@@ -1,30 +1,12 @@
 New Features:
 Create option to  ‘Correct’ or ‘create’ entered abberation
-display total OPD. in terms of waves and actual distance
 
 Bugs:
 Fix freeze when N2<N1
-Instead of minimal layers it should be optimal layers
-make the height field automatically update with the number of optimal layers.
 
-Delete functionality for "packed" layers
-
-use new N values
 
 create text display window to display errors as well as other printouts such as task progress indications
 
-remove 3d plotting
-
-add option to input fringe coeffs
-
-normalization diameter
-
-
-when exporting save a text file with info.
-
-
-voxel size and diameter are not saved.
-
-voxel size is not considered in optimum layer calculation.
+add remaining fringe coeffs.
 
 add option for fringe or standard coeffs.
