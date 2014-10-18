@@ -50,8 +50,10 @@ class Zplot(QMainWindow):
         self.isCalculated = False
         self.isDithered = False
         self.isLayersGenerated = False
+        self.invert=False
+        self.fringe=False
         self.params = [self.cofs, self.wavelength, self.height, self.n1, 
-                       self.n2, self.xRes, self.voxelSize,self.normratio]
+                       self.n2, self.xRes, self.voxelSize,self.normratio,self.invert,self.fringe]
         
                 
         
@@ -61,11 +63,13 @@ class Zplot(QMainWindow):
         
         
         
+        
+        
         #Draw Everything
         self.make_widgets()  
         self.set_geometry()
         
-    
+        self.update_boxes()
     
     def save_system(self):
         self.update_values()
@@ -96,6 +100,8 @@ class Zplot(QMainWindow):
         self.xRes = int(f.readline())
         self.voxelSize = float(f.readline())
         self.normratio=float(f.readline())
+        self.invert=bool(f.readline())
+        self.fringe=bool(f.readline())
                
         self.update_boxes()
 
@@ -109,8 +115,12 @@ class Zplot(QMainWindow):
         self.n1 = float(self.n1Box.text())
         self.n2 = float(self.n2Box.text())
         
-        self.params = [self.cofs, self.wavelength, self.height, self.n1, 
-                       self.n2, self.xRes, self.voxelSize,self.normratio]
+        if self.invertCheck.isChecked():
+            self.invert=True
+        else:
+            self.invert=False
+       
+        
         
         
     def update_boxes(self):
@@ -123,7 +133,7 @@ class Zplot(QMainWindow):
         self.normratioBox.setText(str(self.normratio))
         self.voxelSizeBox.setText(str(self.voxelSize))
         self.resolutionBox.setText(str(self.xRes))
-        
+        self.invertCheck.setChecked(self.invert)        
     
     def toggle(self, state):
         """Assigns bool 'state' to the value of the setEnabled() parameter 
@@ -281,7 +291,7 @@ class Zplot(QMainWindow):
                 self.cofs[i] = float(self.zBoxes[i].text())
             except:
                 self.cofs[i] = 0;        
-        self.z = zernike.Zernike(self.cofs, self.wavelength,self.xRes,self.normratio)
+        self.z = zernike.Zernike(self.cofs, self.wavelength,self.xRes,self.normratio,correcting=self.invert,fringe=self.fringe)
         zopd=self.z.opd
         self.idealLayers = int(np.ceil(self.minheight(np.nanmax(self.z.opd)-np.nanmin(self.z.opd),self.voxelSize,self.n1,self.n2)))
         self.idealLayersLabel.setText("Optimum Layer #: "+str(self.idealLayers))
@@ -291,7 +301,14 @@ class Zplot(QMainWindow):
         self.height = self.idealLayers
         self.heightBox.setText(str(self.height))
         self.toggle(1)
-        
+       
+    def fringeswitch(self):
+        if self.fringe==False:
+            self.fringe=True
+            self.fringeButton.setText('Use Standard Coefficients')
+        else:
+            self.fringe=False
+            self.fringeButton.setText('Use Fringe Coefficients')
    
         
         
@@ -349,7 +366,7 @@ class Zplot(QMainWindow):
         self.n1Label = QLabel("n1:")
         
         self.n2Box = QLineEdit(str(self.n2))
-        self.n2Label = QLabel("n2")
+        self.n2Label = QLabel("n2:")
         
         self.voxelSizeBox = QLineEdit(str(self.voxelSize))
         self.voxelSizeLabel = QLabel(u"Voxel Size (μm):")
@@ -364,6 +381,13 @@ class Zplot(QMainWindow):
         """self.buttonSlice = QPushButton('Slice')
         self.buttonSlice.setEnabled(False)
         self.buttonSlice.pressed.connect(self.slice_layers)"""       
+        self.invertCheck=QCheckBox()
+        self.invertLabel=QLabel('Invert:')
+        
+        self.fringeButton=QPushButton('Use Fringe Coefficients')
+        self.fringeButton.setEnabled(True)
+        self.fringeButton.pressed.connect(self.fringeswitch)
+        
         
         self.buttonExportAll = QPushButton('Export All')
         self.buttonExportAll.setEnabled(False)
@@ -450,6 +474,11 @@ class Zplot(QMainWindow):
         self.topLayout.addWidget(self.normratioBox,0,7)
         
         self.topLayout.addWidget(self.idealLayersLabel,2,0,1,2)
+        
+        self.topLayout.addWidget(self.invertLabel,1,6)
+        self.topLayout.addWidget(self.invertCheck,1,7)
+        
+        self.topLayout.addWidget(self.fringeButton,1,8)
                 
         
         #self.leftLayout.addWidget(self.buttonSlice,1,2,1,2)

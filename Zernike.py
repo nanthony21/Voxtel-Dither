@@ -25,7 +25,7 @@ class Zernike:
         else:
             return 0
     
-    def __init__(self,cofs,wavelength,res,normalizationratio,correcting=False,fringe=True):
+    def __init__(self,cofs,wavelength,res,normalizationratio,correcting=False,fringe=False):
         self.xres = self.yres = res                
         X = np.linspace(-1,1,self.xres)
         Y = np.linspace(-1,1,self.yres)
