@@ -70,8 +70,14 @@ class Zplot(QMainWindow):
         self.set_geometry()
         
         self.update_boxes()
-    
+        
+        
+        
+        
+        
+     
     def save_system(self):
+        #Saves all variables to a text file.
         self.update_values()
         dialog = QFileDialog(self)
         filename = dialog.getSaveFileName()
@@ -86,6 +92,7 @@ class Zplot(QMainWindow):
                       
         
     def load_system(self):
+        #Loads all variables from a text file
         dialog = QFileDialog(self)
         filename = dialog.getOpenFileName()
         f = open(filename,'r')
@@ -330,11 +337,7 @@ class Zplot(QMainWindow):
         self.fileMenu = self.menus.addMenu('&File')
         self.fileMenu.addAction(self.saveSystemAction)
         self.fileMenu.addAction(self.loadSystemAction)
-        #self.fileMenu.addAction(self.exitAction)
         
-        #self.settingsMenu = self.menus.addMenu('&Settings')
-        #self.settingsMenu.addAction(self.changeWavelengthAction)
-        #self.settingsMenu.addAction(self.changeHeightAction)
         
         self.status = self.statusBar()
         self.status.showMessage(self.readyMessage)
@@ -378,9 +381,7 @@ class Zplot(QMainWindow):
         self.normratioLabel=QLabel('Normalization Ratio:')
         
         #Button Declarations and Statuses
-        """self.buttonSlice = QPushButton('Slice')
-        self.buttonSlice.setEnabled(False)
-        self.buttonSlice.pressed.connect(self.slice_layers)"""       
+       
         self.invertCheck=QCheckBox()
         self.invertLabel=QLabel('Invert:')
         
@@ -409,7 +410,8 @@ class Zplot(QMainWindow):
         self.buttonCalc = QPushButton('Calculate')
         self.buttonCalc.pressed.connect(self.calculate)
         
-
+        self.text=QTextEdit()
+        
         
         #Graphs
         self.zernikeFig = plt.figure()
@@ -479,6 +481,8 @@ class Zplot(QMainWindow):
         self.topLayout.addWidget(self.invertCheck,1,7)
         
         self.topLayout.addWidget(self.fringeButton,1,8)
+        
+        self.topLayout.addWidget(self.text,2,12)
                 
         
         #self.leftLayout.addWidget(self.buttonSlice,1,2,1,2)
@@ -521,9 +525,10 @@ class Zplot(QMainWindow):
         self.setGeometry(100, 100, 1500, 600)
         self.setWindowTitle('Grin Phase Plate Design')
         self.show()
-            
-        
-    
+          
+   
+
 app = QApplication(sys.argv)
+
 form = Zplot()
 app.exec_()   
