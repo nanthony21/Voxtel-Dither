@@ -32,28 +32,38 @@ class Zplot(QMainWindow):
 
     def __init__(self,parent=None):
         super(Zplot,self).__init__(parent)
+                
         self.t = 0        
         self.calcTime = 0
         self.zBoxes = 37*[0]
         self.zBoxLabels = 37*[0]
         self.cofs = 37*[0]
-        self.wavelength = 633
+        self.wavelength = 0.633
         self.voxelSize = 20
-        self.diameter = 50
-        self.xRes = self.yRes = int(self.diameter*1000/self.voxelSize)
+        self.xRes = 1000
         self.height = 13
-        self.voxelsize = 20000
-        self.n1 = 1.5-0.021
-        self.n2 = 1.5+0.021
+        self.printedradius=20
+        self.normratio=1
+        self.n1 = 1.5064
+        self.n2 = 1.5438
         self.is3d = False
         self.isCalculated = False
         self.isDithered = False
         self.isLayersGenerated = False
-                
+        self.invert=False
+        self.fringe=False
+        self.params = [self.cofs, self.wavelength, self.height, self.n1, 
+                       self.n2, self.xRes, self.voxelSize,self.normratio,self.invert,self.fringe]
         
-        #Status Bar Messages        
+        sys.stdout=EmittingStream()        
+        self.connect(sys.stdout,SIGNAL('textWritten(QString)'),self.normalOutputWritten)        
+        sys.stderr=EmittingStream()        
+        self.connect(sys.stderr,SIGNAL('textWritten(QString)'),self.normalOutputWritten)        
+                #Status Bar Messages        
         self.calcMessage = "CALCULATING..."
         self.readyMessage = "READY"
+        
+        
         
         
         
@@ -61,59 +71,66 @@ class Zplot(QMainWindow):
         self.make_widgets()  
         self.set_geometry()
         
-    
-    
+        self.update_boxes()
+        
+        
+        
+        
+        
+     
     def save_system(self):
+        #Saves all variables to a text file.
+        self.update_values()
         dialog = QFileDialog(self)
         filename = dialog.getSaveFileName()
         f = open(filename,'w')
         
-        self.params = [self.cofs, self.wavelength, self.height, self.n1, 
-                       self.n2, self.xRes, self.yRes,self.voxelsize]
-        
-        
         for i in self.params:
-            f.write(str(i)+"\n")        
+            f.write(str(i)+"\n")
         
-        """if self.isCalculated:
-            np.savetxt(f,self.z.opd)
-            
-        if self.isDithered:
-            self.params.append(self.d.dithered)
-        
-        if self.isLayersGenerated:
-            self.params.append(self.d.data)"""
             
         
         
                       
         
     def load_system(self):
+        #Loads all variables from a text file
         dialog = QFileDialog(self)
         filename = dialog.getOpenFileName()
         f = open(filename,'r')
+        
+        
+        
         self.cofs = ast.literal_eval(f.readline())
         self.wavelength = float(f.readline())
         self.height = int(f.readline())
         self.n1 = float(f.readline())
         self.n2 = float(f.readline())
         self.xRes = int(f.readline())
-        self.yRes = int(f.readline())
-        self.voxelsize = int(f.readline())
+        self.voxelSize = float(f.readline())
+        self.normratio=float(f.readline())
+        self.invert=bool(f.readline())
+        self.fringe=bool(f.readline())
+               
         self.update_boxes()
-        print f.readlines()
 
     
     def update_values(self):
         """Queries all text boxes and updates the system parameters"""
         self.voxelSize = float(self.voxelSizeBox.text())
-        self.voxelsize=self.voxelSize*1000
-        self.diameter = float(self.diameterBox.text())
-        self.xRes = self.yRes = int(self.diameter*1000/self.voxelSize)
+        self.xRes = int(self.resolutionBox.text())
         self.wavelength = float(self.wavelengthBox.text())
-        self.height = int(self.heightBox.text())
+        self.normratio=float(self.normratioBox.text())
         self.n1 = float(self.n1Box.text())
         self.n2 = float(self.n2Box.text())
+        
+        if self.invertCheck.isChecked():
+            self.invert=True
+        else:
+            self.invert=False
+       
+        
+        
         
     def update_boxes(self):
         for i in range(len(self.zBoxes)):
@@ -122,9 +139,10 @@ class Zplot(QMainWindow):
         self.heightBox.setText(str(self.height))
         self.n1Box.setText(str(self.n1))
         self.n2Box.setText(str(self.n2))
+        self.normratioBox.setText(str(self.normratio))
         self.voxelSizeBox.setText(str(self.voxelSize))
-        self.diameterBox.setText(str(self.diameter))
-        
+        self.resolutionBox.setText(str(self.xRes))
+        self.invertCheck.setChecked(self.invert)        
     
     def toggle(self, state):
         """Assigns bool 'state' to the value of the setEnabled() parameter 
@@ -134,7 +152,6 @@ class Zplot(QMainWindow):
         #self.button2D.setEnabled(state)
         if self.isDithered:
             self.buttonLayers.setEnabled(state)
-            self.buttonLayersFast.setEnabled(state)
             self.layersMenu.setEnabled(state)
         if self.isLayersGenerated:
             self.buttonExportAll.setEnabled(state)
@@ -153,6 +170,7 @@ class Zplot(QMainWindow):
         """Opens a dialog and asks the user to select a folder to save bitmaps in"""
         self.layerFolder = str(QFileDialog.getExistingDirectory())
         self.d.savelayers(self.layerFolder)
+        
         return 1
     
 
@@ -163,9 +181,7 @@ class Zplot(QMainWindow):
         self.zernikeGridSpec = gs.GridSpec(1,2,width_ratios = [1,.1])
         self.zernikeAxes1 = self.zernikeFig.add_subplot(self.zernikeGridSpec[0])
         self.zernikeAxes2 = self.zernikeFig.add_subplot(self.zernikeGridSpec[1])
-        self.zernikeAxes1.set_title(str(self.diameter)+" mm GRIN Lens")
-        self.zernikeAxes1.set_xlabel("GRIN Lens Width (mm)")
-        self.zernikeAxes2.set_ylabel("Grin Lens Height (mm)")
+        self.zernikeAxes1.set_title('Max OPD: %.4f'%(np.nanmax(self.z.opd)-np.nanmin(self.z.opd)))
         self.zernikeAxes2.set_xlabel("OPD ($\mu$m)")
         
     def __generate_dither_axes(self):
@@ -174,15 +190,8 @@ class Zplot(QMainWindow):
         self.ditherGridSpec = gs.GridSpec(1,2,width_ratios = [1,.1])
         self.ditherAxes1 = self.ditherFig.add_subplot(self.ditherGridSpec[0])
         self.ditherAxes2 = self.ditherFig.add_subplot(self.ditherGridSpec[1])
-        self.ditherAxes1.set_title(str(self.diameter)+" mm GRIN Lens Dithered")
-        self.ditherAxes1.set_xlabel('GRIN Lens Width (mm)')
         self.ditherAxes2.set_xlabel('Effective n')
         
-    def __generate_3d_axes(self):
-        self.zernikeFig.clear()
-        self.zernikeAxes3d = self.zernikeFig.add_subplot(111,projection = '3d')
-        self.zernikeAxes3d.set_xlabel("GRIN Lens Width (mm)")
-        self.zernikeAxes3d.set_zlabel("OPD ($\mu$m)")
         
     """def __generate_slice_axes(self):
         #Same as above function, but for the dither plot
@@ -197,31 +206,20 @@ class Zplot(QMainWindow):
         that stack up to an effective index of refraction. Also creates the menu
         that allows the user to select a layer to view"""
         self.update_values()
-        self.isLayersGenerated = True        
+       
         self.toggle(0)
-        self.d.calc3d()
-        self.layersMenu.setEnabled(True)
-        self.layersMenu.clear()
-        self.layersMenu.addItem("Composite")
-        for i in range(self.height):
-            self.layersMenu.addItem("Layer %g" %(i+1))
+        try:        
+            self.d.calc3d()
+            self.layersMenu.setEnabled(True)
+            self.layersMenu.clear()
+            self.layersMenu.addItem("Composite")
+            for i in range(self.height):
+                self.layersMenu.addItem("Layer %g" %(i+1))
+                
+            self.isLayersGenerated = True
             
-        self.isLayersGenerated = True
-        self.toggle(1)
-    
-    def generate_layers_fast(self):
-        """Same as 'generate_layers', but with the 'calc3dfast()' function from 'dither.py'"""
-        
-        self.update_values()
-        self.toggle(0)
-        self.d.calc3dfast()
-        self.layersMenu.setEnabled(True)
-        self.layersMenu.clear()
-        self.layersMenu.addItem("Composite")
-        for i in range(self.height):
-            self.layersMenu.addItem("Layer %g" %(i+1))
-            
-        self.isLayersGenerated = True
+        except Exception, err:
+            sys.stderr.write('Error: %s\n' % str(err))
         self.toggle(1)
         
         
@@ -232,7 +230,7 @@ class Zplot(QMainWindow):
         try:
             if layer[-1] == 'e':
                 self.__generate_dither_axes()
-                image = self.ditherAxes1.imshow(np.float32(self.d.dithered))
+                image = self.ditherAxes1.imshow(np.float32(self.d.dithered),interpolation='none',cmap='jet')
                 self.ditherFig.colorbar(image, self.ditherAxes2)
                 self.ditherCanvas.draw()
             else:
@@ -243,7 +241,7 @@ class Zplot(QMainWindow):
                 
                 self.ditherFig.clear()
                 self.ditherAxes = self.ditherFig.add_subplot(111)
-                self.ditherAxes.imshow(self.d.data[:,:,index])
+                self.ditherAxes.imshow(self.d.data[:,:,index],interpolation='none',cmap='jet')
                 self.ditherCanvas.draw()
             
         except:
@@ -253,37 +251,24 @@ class Zplot(QMainWindow):
     def dither(self):
         self.toggle(0)
         self.update_values()
-        self.isDithered = True
-        self.status.showMessage(self.calcMessage)
-        
-        #try:
-        self.d = dither.Dither(self.z.opd, self.height,self.voxelsize,self.n1,self.n2)                 
-        
-        """except:        
-            self.d = dither.Dither(self.z.opd,
-                               self.height,self.voxelsize,
-                               self.n1,self.n2)"""
-        
-        print self.d.height
-        self.status.showMessage(self.readyMessage)
-        
-        self.__generate_dither_axes()
-        image = self.ditherAxes1.imshow(np.float32(self.d.dithered),extent = (0,self.diameter,0,self.diameter))
-        self.ditherFig.colorbar(image, self.ditherAxes2)
-        self.ditherCanvas.draw()
+        try:        
+            self.isDithered = True
+            self.status.showMessage(self.calcMessage)
+            
+    
+            self.d = dither.Dither(self.z.opd, self.height,self.voxelSize,self.n1,self.n2)                 
+            
+            self.status.showMessage(self.readyMessage)
+            
+            self.__generate_dither_axes()
+            image = self.ditherAxes1.imshow(np.float32(self.d.dithered),interpolation='none',cmap='jet')
+            self.ditherFig.colorbar(image, self.ditherAxes2)
+            self.ditherCanvas.draw()
+        except Exception,err:
+            sys.stderr.write('Error: %s\n'%str(err))
         self.toggle(True)
-        self.buttonLayers.setEnabled(True)
-        self.buttonLayersFast.setEnabled(True)
+ 
    
-    """def slice_layers(self):
-        self.toggle(0)
-        self.update_values()   
-        self.s = sl.Slice(self.z.opd,self.height,self.voxelsize,self.n1,self.n2)
-        self.__generate_slice_axes()
-        image = self.sliceAxes1.imshow(self.s.total)
-        self.sliceFig.colorbar(image,self.sliceAxes2)
-        self.sliceCanvas.draw()
-        self.toggle(1)"""
     
     def minheight(self,opd,pvheight,n1,n2):
         '''
@@ -297,29 +282,17 @@ class Zplot(QMainWindow):
         minheight=opd/(pvheight*(n2-n1))
         return minheight    
     
-    
-    def enable_3d(self, state):
-        if state == 0:
-            self.dimensionMenu.setEnabled(False)
-        else:
-            self.dimensionMenu.setEnabled(True)
         
      
-    def plot_zernike(self, dimension):
+    def plot_zernike(self):
         if self.isCalculated:
-            if not dimension:
-                self.__generate_zernike_axes()
-                image = self.zernikeAxes1.imshow(self.z.opd/1000,cmap='jet',extent=[0, self.diameter, 0, self.diameter])
-                self.zernikeFig.colorbar(image, self.zernikeAxes2)        
-                self.zernikeFig.hold(False)
-                self.zernikeCanvas.draw()
-            else:
-                self.__generate_3d_axes()
-                self.zernikeAxes3d.plot_surface(self.z.x,self.z.y,self.z.opd,cstride=self.z.opd.shape[0]//50,rstride=self.z.opd.shape[1]//50,linewidth=0)
-                self.zernikeFig.hold(False)
-                self.zernikeCanvas.draw()
-        
-        
+            self.__generate_zernike_axes()
+            image = self.zernikeAxes1.imshow(self.z.opd,cmap='jet',interpolation='none')
+            
+            self.zernikeFig.colorbar(image, self.zernikeAxes2)        
+            self.zernikeFig.hold(False)
+            self.zernikeCanvas.draw()
+
         
         
         
@@ -327,22 +300,39 @@ class Zplot(QMainWindow):
     def calculate(self):
         self.toggle(0)
         self.update_values()
+        global zopd
         
         for i in range(37):
             try:
                 self.cofs[i] = float(self.zBoxes[i].text())
             except:
                 self.cofs[i] = 0;        
-        self.z = zernike.Zernike(self.cofs, self.wavelength,self.xRes)
-        
-        idealLayers = self.minheight(np.nanmax(self.z.opd)-np.nanmin(self.z.opd),self.voxelsize,self.n1,self.n2)
-        self.idealLayersLabel.setText("Optimum Layer #: "+str(int(np.ceil(idealLayers))))
-        self.isCalculated = True
-        self.plot_zernike(self.dimensionMenu.currentIndex())
-        
-        print idealLayers
+        try:
+            self.z = zernike.Zernike(self.cofs, self.wavelength,self.xRes,self.normratio,correcting=self.invert,fringe=self.fringe)
+            
+            zopd=self.z.opd
+            self.idealLayers = int(np.ceil(self.minheight(np.nanmax(self.z.opd)-np.nanmin(self.z.opd),self.voxelSize,self.n1,self.n2)))
+            self.idealLayersLabel.setText("Optimum Layer #: "+str(self.idealLayers))
+            self.isCalculated = True
+            self.isDithered=False
+            self.plot_zernike()       
+            self.height = self.idealLayers
+            self.heightBox.setText(str(self.height))
+            print "Done Calculating"
+        except Exception, err:
+            sys.stderr.write('Error: %s\n' % str(err))
+
+            
         self.toggle(1)
         
+       
+    def fringeswitch(self):
+        if self.fringe==False:
+            self.fringe=True
+            self.fringeButton.setText('Use Standard Coefficients')
+        else:
+            self.fringe=False
+            self.fringeButton.setText('Use Fringe Coefficients')
    
         
         
@@ -364,11 +354,7 @@ class Zplot(QMainWindow):
         self.fileMenu = self.menus.addMenu('&File')
         self.fileMenu.addAction(self.saveSystemAction)
         self.fileMenu.addAction(self.loadSystemAction)
-        #self.fileMenu.addAction(self.exitAction)
         
-        #self.settingsMenu = self.menus.addMenu('&Settings')
-        #self.settingsMenu.addAction(self.changeWavelengthAction)
-        #self.settingsMenu.addAction(self.changeHeightAction)
         
         self.status = self.statusBar()
         self.status.showMessage(self.readyMessage)
@@ -385,24 +371,13 @@ class Zplot(QMainWindow):
         self.layersMenu.setEnabled(False)
         self.layersMenu.currentIndexChanged[str].connect(self.show_dithered_layer)
 
-        #Zernike 3D Stuff
-        
-        self.enable3dButton = QCheckBox("Enable 3D (slow)")
-        self.enable3dButton.setToolTip("Recommended for a diameter of less than 10mm")
-        self.enable3dButton.stateChanged[int].connect(self.enable_3d)
-        
-        self.dimensionMenu = QComboBox()
-        self.dimensionMenu.addItem("2d")
-        self.dimensionMenu.addItem("3d")
-        self.dimensionMenu.setEnabled(False)
-        self.dimensionMenu.currentIndexChanged[int].connect(self.plot_zernike)
         
         #Other Labels
         self.idealLayersLabel = QLabel("Minimum Ideal Layers")
         self.ditherLabel = QLabel("Dithered Image")
         
         self.wavelengthBox = QLineEdit(str(self.wavelength))
-        self.wavelengthLabel = QLabel("Wavelength (nm):")
+        self.wavelengthLabel = QLabel("Wavelength (um):")
         
         self.heightBox = QLineEdit(str(self.height))
         self.heightLabel = QLabel("Layers:")
@@ -411,18 +386,26 @@ class Zplot(QMainWindow):
         self.n1Label = QLabel("n1:")
         
         self.n2Box = QLineEdit(str(self.n2))
-        self.n2Label = QLabel("n2")
+        self.n2Label = QLabel("n2:")
         
         self.voxelSizeBox = QLineEdit(str(self.voxelSize))
         self.voxelSizeLabel = QLabel(u"Voxel Size (μm):")
         
-        self.diameterBox = QLineEdit(str(self.diameter))
-        self.diameterLabel = QLabel("Diameter (mm):")
+        self.resolutionBox = QLineEdit(str(self.xRes))
+        self.resolutionLabel = QLabel("Diameter (pixels):")
+        
+        self.normratioBox=QLineEdit(str(self.normratio))
+        self.normratioLabel=QLabel('Normalization Ratio:')
         
         #Button Declarations and Statuses
-        """self.buttonSlice = QPushButton('Slice')
-        self.buttonSlice.setEnabled(False)
-        self.buttonSlice.pressed.connect(self.slice_layers)"""       
+       
+        self.invertCheck=QCheckBox()
+        self.invertLabel=QLabel('Invert:')
+        
+        self.fringeButton=QPushButton('Use Fringe Coefficients')
+        self.fringeButton.setEnabled(True)
+        self.fringeButton.pressed.connect(self.fringeswitch)
+        
         
         self.buttonExportAll = QPushButton('Export All')
         self.buttonExportAll.setEnabled(False)
@@ -434,10 +417,7 @@ class Zplot(QMainWindow):
         self.buttonDither.setEnabled(False)
         self.buttonDither.pressed.connect(self.dither)
         
-        
-        self.buttonLayersFast = QPushButton('Generate Layers (Packed)')
-        self.buttonLayersFast.setEnabled(False)
-        self.buttonLayersFast.pressed.connect(self.generate_layers_fast)        
+                
         
         
         self.buttonLayers = QPushButton('Generate Layers (sparse)')
@@ -447,17 +427,9 @@ class Zplot(QMainWindow):
         self.buttonCalc = QPushButton('Calculate')
         self.buttonCalc.pressed.connect(self.calculate)
         
-        """self.button2D = QPushButton('2D')
-        self.button2D.setCheckable(True)
-        self.button2D.setChecked(True)
+        self.text=QTextEdit()
+        self.text.setReadOnly(True)
         
-        self.button3D = QPushButton('3D')
-        self.button3D.setCheckable(True)
-        self.button3D.setEnabled(False)
-        
-        self.zButtons = QButtonGroup()
-        self.zButtons.addButton(self.button2D)
-        self.zButtons.addButton(self.button3D)"""
         
         #Graphs
         self.zernikeFig = plt.figure()
@@ -515,10 +487,20 @@ class Zplot(QMainWindow):
         self.topLayout.addWidget(self.voxelSizeLabel,0,4)
         self.topLayout.addWidget(self.voxelSizeBox,0,5)
         
-        self.topLayout.addWidget(self.diameterLabel,1,4)
-        self.topLayout.addWidget(self.diameterBox,1,5)
+        self.topLayout.addWidget(self.resolutionLabel,1,4)
+        self.topLayout.addWidget(self.resolutionBox,1,5)
+        
+        self.topLayout.addWidget(self.normratioLabel,0,6)
+        self.topLayout.addWidget(self.normratioBox,0,7)
         
         self.topLayout.addWidget(self.idealLayersLabel,2,0,1,2)
+        
+        self.topLayout.addWidget(self.invertLabel,1,6)
+        self.topLayout.addWidget(self.invertCheck,1,7)
+        
+        self.topLayout.addWidget(self.fringeButton,1,8)
+        
+        self.topLayout.addWidget(self.text,0,12,2,1)
                 
         
         #self.leftLayout.addWidget(self.buttonSlice,1,2,1,2)
@@ -532,13 +514,9 @@ class Zplot(QMainWindow):
                 self.leftLayout.addWidget(self.zBoxLabels[i],i-17,2)
                 self.leftLayout.addWidget(self.zBoxes[i],i-17,3)
         
-        self.middleLayout.addWidget(self.enable3dButton)
-        self.middleLayout.addWidget(self.dimensionMenu,0,1)
-        #self.middleLayout.addWidget(self.button3D,0,1)
         self.middleLayout.addWidget(self.zernikeCanvas,1,0,5,5)
         
         self.rightLayout.addWidget(self.buttonLayers,0,0)
-        self.rightLayout.addWidget(self.buttonLayersFast,0,1)
         self.rightLayout.addWidget(self.layersMenu,0,2)
         self.rightLayout.addWidget(self.ditherCanvas,1,0,5,5)
         self.rightLayout.addWidget(self.buttonExportAll,0,3)
@@ -565,9 +543,25 @@ class Zplot(QMainWindow):
         self.setGeometry(100, 100, 1500, 600)
         self.setWindowTitle('Grin Phase Plate Design')
         self.show()
-            
-        
-    
+          
+    def normalOutputWritten(self, text):
+        """Append text to the QTextEdit."""
+        # Maybe QTextEdit.append() works as well, but this is how I do it:
+        cursor = self.text.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertText(text)
+        self.text.setTextCursor(cursor)
+        self.text.ensureCursorVisible()
+
+class EmittingStream(QObject):
+
+    textWritten = pyqtSignal(str)
+
+    def write(self, text):
+        self.textWritten.emit(str(text))
+
+
 app = QApplication(sys.argv)
+
 form = Zplot()
 app.exec_()   

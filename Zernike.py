@@ -2,7 +2,6 @@ from __future__ import division
 import numpy as np, scipy as sp
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-import time
 
 class Zernike:
     '''
@@ -26,8 +25,7 @@ class Zernike:
         else:
             return 0
     
-    def __init__(self,cofs,wavelength,res,correcting=False,fringe=True):
-        t = time.time()
+    def __init__(self,cofs,wavelength,res,normalizationratio,correcting=False,fringe=False):
         self.xres = self.yres = res                
         X = np.linspace(-1,1,self.xres)
         Y = np.linspace(-1,1,self.yres)
@@ -39,12 +37,13 @@ class Zernike:
         self.r =np.sqrt(self.x**2+self.y**2)
         self.theta = np.arctan2(self.y,self.x)
         self.wf=sp.zeros((self.yres,self.xres))
-        
+        if normalizationratio<1:
+            raise ValueError('normalizedradius may not be less than printedradius')
         for i in range(37):
             if self.cofs[i]!=0 and fringe==False:
-               self.wf+= self.cofs[i]*getattr(self,'z%g'%i)(self.r,self.theta)
+               self.wf+= self.cofs[i]*getattr(self,'z%g'%i)(self.r/normalizationratio,self.theta)
             if self.cofs[i]!=0 and fringe==True:
-               self.wf+= self.cofs[i]*getattr(self,'zf%g'%i)(self.r,self.theta)
+               self.wf+= self.cofs[i]*getattr(self,'zf%g'%i)(self.r/normalizationratio,self.theta)
                
         self.wf[self.r > 1] = None
         

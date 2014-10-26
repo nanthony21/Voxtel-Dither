@@ -11,10 +11,9 @@ from scipy import misc
 import bisect
 
 
-
 class Dither:
     
-    def __init__(self,ideal,height,pheight,n1,n2):
+    def __init__(self,ideal,height,pheight,n1,n2):       
         self.height=height
         
         self.ideal=ideal-np.nanmin(ideal)
@@ -60,6 +59,7 @@ class Dither:
         mids = [(self.possiblevalues[i] + self.possiblevalues[i + 1]) / 2.0 for i in xrange(len(self.possiblevalues) - 1)]       
         
         for i in xrange(self.ypix):
+            
             for j in xrange(self.xpix):
                 if np.isnan(self.idealn[i,j]):
                     self.dithered[i,j]=None
@@ -84,7 +84,7 @@ class Dither:
                         self.dithered[i+1,j+1]=self.dithered[i+1,j+1]+qerror*0.0625
                     except IndexError:
                         pass
-    
+        print "Done Dithering"
     def calc3d(self):         
               
 
@@ -95,7 +95,7 @@ class Dither:
         self.data=self.data.swapaxes(-1,-1)
         for ndx in self.aperind:
             np.random.shuffle(self.data[ndx])
-    
+        print "Done Calculating"
         
     
     def printlayers(self):
@@ -106,7 +106,13 @@ class Dither:
         plt.show()
     
     def savelayers(self, directory):
-                        
+        with open(directory+'Details.txt','w') as text_file:
+            text_file.write('n1=%.4f\n'%self.n1)
+            text_file.write('n2=%.4f\n'%self.n2)
+            text_file.write('Diameter(pixels)=%d\n'%self.ypix)
+            text_file.write('Voxel Height=%.2f\n'%self.pheight)
+            text_file.write('Layers=%.d\n'%self.height)
+
         for i in range(self.height):
             n1data = self.data[:,:,i]
             n2data=n1data==False
@@ -136,6 +142,7 @@ def examplegauss(res,sigma):
             r2=(i-res/2)**2+(j-res/2)**2
             gauss[i,j]=np.exp(-r2/(2*sigma**2))
     return gauss
-        
-      
 
+if __name__ == '__main__':
+    a=examplegauss(1000,300)
+    b=Dither(a,10,10,1.6,1.5)
