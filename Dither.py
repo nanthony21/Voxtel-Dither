@@ -132,17 +132,3 @@ class Dither:
          ax3.imshow(self.dithered)
          
 
-        
-        
-        
-def examplegauss(res,sigma):
-    gauss=np.zeros((res,res))
-    for i in range(res):
-        for j in range(res):
-            r2=(i-res/2)**2+(j-res/2)**2
-            gauss[i,j]=np.exp(-r2/(2*sigma**2))
-    return gauss
-
-if __name__ == '__main__':
-    a=examplegauss(1000,300)
-    b=Dither(a,10,10,1.6,1.5)

@@ -181,15 +181,6 @@ class Zernike:
         return (35*r**6-60*r**4+30*r**2-4)*r*np.sin(theta)
     def zf24(self,r,theta):
         return 70*r**8-140*r**6+90*r**4-20*r**2+1
-                    
-
-    def plot3d(self):
-        """The coefficients must be in the form of a list, and it can be 0 to 15 
-        segments long"""
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(self.x,self.y,self.opd,cstride=self.opd.shape[0]//50,rstride=self.opd.shape[1]//50,linewidth=0)
-        plt.show()
     
         
         

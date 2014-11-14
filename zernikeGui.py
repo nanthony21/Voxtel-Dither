@@ -27,6 +27,7 @@ from Dither import *
 import numpy
 from numpy import arange, sin, pi
 
+
 class Zplot(QMainWindow):
     #Main window containing all widgits
 
@@ -87,7 +88,6 @@ class Zplot(QMainWindow):
         
         for i in self.params:
             f.write(str(i)+"\n")
-        
             
         
         
@@ -99,7 +99,13 @@ class Zplot(QMainWindow):
         filename = dialog.getOpenFileName()
         f = open(filename,'r')
         
-        
+        def str_bool_check(a):
+            if a=="False\n":
+                return False
+            elif a=='True\n':
+                return True
+            else:
+                raise ValueError('Expected boolean value but instead got %s.'%a)
         
         self.cofs = ast.literal_eval(f.readline())
         self.wavelength = float(f.readline())
@@ -109,10 +115,12 @@ class Zplot(QMainWindow):
         self.xRes = int(f.readline())
         self.voxelSize = float(f.readline())
         self.normratio=float(f.readline())
-        self.invert=bool(f.readline())
-        self.fringe=bool(f.readline())
-               
+        self.invert=str_bool_check(f.readline())        
+        self.fringe=str_bool_check(f.readline())        
+        print self.invert, self.fringe
         self.update_boxes()
+        
+        
 
     
     def update_values(self):
@@ -128,8 +136,14 @@ class Zplot(QMainWindow):
             self.invert=True
         else:
             self.invert=False
+        for i in range(37):
+            try:
+                self.cofs[i] = float(self.zBoxes[i].text())
+            except:
+                self.cofs[i] = 0; 
        
-        
+        self.params = [self.cofs, self.wavelength, self.height, self.n1, 
+                       self.n2, self.xRes, self.voxelSize,self.normratio,self.invert,self.fringe]
         
         
     def update_boxes(self):
@@ -142,7 +156,19 @@ class Zplot(QMainWindow):
         self.normratioBox.setText(str(self.normratio))
         self.voxelSizeBox.setText(str(self.voxelSize))
         self.resolutionBox.setText(str(self.xRes))
-        self.invertCheck.setChecked(self.invert)        
+        self.invertCheck.setChecked(self.invert)
+        
+        if self.fringe==True:
+            self.fringeButton.setText('Use Standard Coefficients')
+            for i in range(25,37):
+                self.zBoxes[i].setEnabled(False)
+                self.zBoxes[i].setText('0')
+                self.cofs[i]=0
+        else:
+            self.fringeButton.setText('Use Fringe Coefficients')
+            for i in range(25,37):
+                self.zBoxes[i].setEnabled(True)
+                
     
     def toggle(self, state):
         """Assigns bool 'state' to the value of the setEnabled() parameter 
@@ -181,7 +207,7 @@ class Zplot(QMainWindow):
         self.zernikeGridSpec = gs.GridSpec(1,2,width_ratios = [1,.1])
         self.zernikeAxes1 = self.zernikeFig.add_subplot(self.zernikeGridSpec[0])
         self.zernikeAxes2 = self.zernikeFig.add_subplot(self.zernikeGridSpec[1])
-        self.zernikeAxes1.set_title('Max OPD: %.4f'%(np.nanmax(self.z.opd)-np.nanmin(self.z.opd)))
+        self.zernikeAxes1.set_title('Max OPD: %.4f ($\mu$m)'%(np.nanmax(self.z.opd)-np.nanmin(self.z.opd)))
         self.zernikeAxes2.set_xlabel("OPD ($\mu$m)")
         
     def __generate_dither_axes(self):
@@ -302,11 +328,7 @@ class Zplot(QMainWindow):
         self.update_values()
         global zopd
         
-        for i in range(37):
-            try:
-                self.cofs[i] = float(self.zBoxes[i].text())
-            except:
-                self.cofs[i] = 0;        
+       
         try:
             self.z = zernike.Zernike(self.cofs, self.wavelength,self.xRes,self.normratio,correcting=self.invert,fringe=self.fringe)
             
@@ -330,10 +352,15 @@ class Zplot(QMainWindow):
         if self.fringe==False:
             self.fringe=True
             self.fringeButton.setText('Use Standard Coefficients')
+            for i in range(25,37):
+                self.zBoxes[i].setEnabled(False)
+                self.zBoxes[i].setText('0')
+                self.cofs[i]=0
         else:
             self.fringe=False
             self.fringeButton.setText('Use Fringe Coefficients')
-   
+            for i in range(25,37):
+                self.zBoxes[i].setEnabled(True)
         
         
     def make_widgets(self):
@@ -373,11 +400,11 @@ class Zplot(QMainWindow):
 
         
         #Other Labels
-        self.idealLayersLabel = QLabel("Minimum Ideal Layers")
+        self.idealLayersLabel = QLabel("Optimum Layer #:")
         self.ditherLabel = QLabel("Dithered Image")
         
         self.wavelengthBox = QLineEdit(str(self.wavelength))
-        self.wavelengthLabel = QLabel("Wavelength (um):")
+        self.wavelengthLabel = QLabel(u"Wavelength (μm):")
         
         self.heightBox = QLineEdit(str(self.height))
         self.heightLabel = QLabel("Layers:")
@@ -389,7 +416,7 @@ class Zplot(QMainWindow):
         self.n2Label = QLabel("n2:")
         
         self.voxelSizeBox = QLineEdit(str(self.voxelSize))
-        self.voxelSizeLabel = QLabel(u"Voxel Size (μm):")
+        self.voxelSizeLabel = QLabel(u"Voxel Height (μm):")
         
         self.resolutionBox = QLineEdit(str(self.xRes))
         self.resolutionLabel = QLabel("Diameter (pixels):")
@@ -472,10 +499,10 @@ class Zplot(QMainWindow):
         
         #Adding Widgets to Layouts
         
-        self.topLayout.addWidget(self.wavelengthLabel,0,0)
+        self.topLayout.addWidget(self.wavelengthLabel,0,0,1,1)
         self.topLayout.addWidget(self.wavelengthBox,0,1)
         
-        self.topLayout.addWidget(self.heightLabel,1,0)
+        self.topLayout.addWidget(self.heightLabel,1,0,alignment=Qt.AlignRight)
         self.topLayout.addWidget(self.heightBox,1,1)        
         
         self.topLayout.addWidget(self.n1Label,0,2)
@@ -484,7 +511,7 @@ class Zplot(QMainWindow):
         self.topLayout.addWidget(self.n2Label,1,2)
         self.topLayout.addWidget(self.n2Box,1,3)
         
-        self.topLayout.addWidget(self.voxelSizeLabel,0,4)
+        self.topLayout.addWidget(self.voxelSizeLabel,0,4,alignment=Qt.AlignRight)
         self.topLayout.addWidget(self.voxelSizeBox,0,5)
         
         self.topLayout.addWidget(self.resolutionLabel,1,4)
@@ -496,9 +523,9 @@ class Zplot(QMainWindow):
         self.topLayout.addWidget(self.idealLayersLabel,2,0,1,2)
         
         self.topLayout.addWidget(self.invertLabel,1,6)
-        self.topLayout.addWidget(self.invertCheck,1,7)
+        self.topLayout.addWidget(self.invertCheck,1,6,1,1,alignment=Qt.AlignCenter)
         
-        self.topLayout.addWidget(self.fringeButton,1,8)
+        self.topLayout.addWidget(self.fringeButton,1,7)
         
         self.topLayout.addWidget(self.text,0,12,2,1)
                 
