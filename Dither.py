@@ -114,9 +114,9 @@ class Dither:
             text_file.write('Layers=%.d\n'%self.height)
 
         for i in range(self.height):
-            n1data = self.data[:,:,i]
-            n2data=n1data==False
-            n1data[self.r>1]=1
+            n2data = self.data[:,:,i]
+            n1data=n2data==False
+            n2data[self.r>1]=1
             misc.imsave(directory + '\layer %d (n1).bmp'%(i+1),n1data.astype(int))
             misc.imsave(directory + '\layer %d (n2).bmp'%(i+1),n2data.astype(int))
      

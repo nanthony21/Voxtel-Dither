@@ -268,6 +268,7 @@ class Zplot(QMainWindow):
                 self.ditherFig.clear()
                 self.ditherAxes = self.ditherFig.add_subplot(111)
                 self.ditherAxes.imshow(self.d.data[:,:,index],interpolation='none',cmap='jet')
+                self.ditherAxes.set_title('Red=N1 Blue=N2')                
                 self.ditherCanvas.draw()
             
         except:
@@ -447,7 +448,7 @@ class Zplot(QMainWindow):
                 
         
         
-        self.buttonLayers = QPushButton('Generate Layers (sparse)')
+        self.buttonLayers = QPushButton('Generate Layers')
         self.buttonLayers.setEnabled(False)
         self.buttonLayers.pressed.connect(self.generate_layers)
         
