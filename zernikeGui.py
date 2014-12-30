@@ -119,7 +119,17 @@ class Zplot(QMainWindow):
         self.fringe=str_bool_check(f.readline())        
         print self.invert, self.fringe
         self.update_boxes()
-        
+    
+    def helptext(self):
+        dialog=QDialog(parent=None)
+        dialog.main=QWidget()
+        dialog.layout=QGridLayout()
+        dialog.text=QLabel('Invert:hello\nnow')
+        dialog.layout.addWidget(dialog.text,1,1)
+        dialog.setLayout(dialog.layout)
+        dialog.setWindowTitle('Help')
+        dialog.show()
+        dialog.exec_()
         
 
     
@@ -376,13 +386,15 @@ class Zplot(QMainWindow):
         self.loadSystemAction.setShortcut('Ctrl+L')
         self.loadSystemAction.triggered.connect(self.load_system)
         
+        self.help=QAction('Help',self)
+        self.help.triggered.connect(self.helptext)
         
         #Menus and StatusBar Declarations / Implementations
         self.menus = self.menuBar()
         self.fileMenu = self.menus.addMenu('&File')
         self.fileMenu.addAction(self.saveSystemAction)
         self.fileMenu.addAction(self.loadSystemAction)
-        
+        self.fileMenu.addAction(self.help)        
         
         self.status = self.statusBar()
         self.status.showMessage(self.readyMessage)
@@ -587,9 +599,8 @@ class EmittingStream(QObject):
 
     def write(self, text):
         self.textWritten.emit(str(text))
-
+       
 
 app = QApplication(sys.argv)
-
 form = Zplot()
 app.exec_()   

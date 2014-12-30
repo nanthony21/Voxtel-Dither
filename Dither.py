@@ -10,10 +10,9 @@ import numpy as np, matplotlib.pyplot as plt
 from scipy import misc
 import bisect
 
-
 class Dither:
     
-    def __init__(self,ideal,height,pheight,n1,n2):       
+    def __init__(self,ideal,height,pheight,n1,n2,idealn=None):       
         self.height=height
         
         self.ideal=ideal-np.nanmin(ideal)
@@ -41,7 +40,10 @@ class Dither:
         self.possiblevalues=[]
         for i in xrange(self.height+1):
             self.possiblevalues.append((i*self.n2+(self.height-i)*self.n1)/(self.height))
-        self.idealn=self.ideal/(self.height*self.pheight)+self.n1
+        if idealn==None:
+            self.idealn=self.ideal/(self.height*self.pheight)+self.n1
+        else:
+            self.idealn=idealn
         self.__floyddither()
     
         
@@ -115,7 +117,7 @@ class Dither:
 
         for i in range(self.height):
             n2data = self.data[:,:,i]
-            n1data=n2data==False
+            n1data=n2data*1==False
             n2data[self.r>1]=1
             misc.imsave(directory + '\layer %d (n1).bmp'%(i+1),n1data.astype(int))
             misc.imsave(directory + '\layer %d (n2).bmp'%(i+1),n2data.astype(int))

@@ -1,3 +1,4 @@
 
 add help file
 figure out whether or not to invert: if not inverted zernikes describe the object not the wavefront
+custom opd
