@@ -121,10 +121,23 @@ class Zplot(QMainWindow):
         self.update_boxes()
     
     def helptext(self):
+        ''' adds the "help" option to the file menu and brings up the help dialog'''
         dialog=QDialog(parent=None)
         dialog.main=QWidget()
         dialog.layout=QGridLayout()
-        dialog.text=QLabel('Invert:hello\nnow')
+        dialog.text=QLabel('This Software is capable of generating print '
+        'files for Standard Zernike coefficients 1-37 and Fringe Zernike '
+        'coefficients 1-25 as defined by Zemax OpticStudio.\n'
+        'Note that for both cases the first coefficient, Piston, '
+        'will not affect your results.\n\n'
+        'The coefficients are in units of waves, so if you have a set of coefficients '
+        'that are in units of mm you can achieve this by setting the "Wavelength" box to 1 mm.\n\n'
+        'Normalization Ratio: This is the ratio of the diameter of the unit circle to which the Zernike '
+        'coefficients are normalized to the diameter of the printed optic.\nThis value must be '
+        'greater than one because the Zernike polynomials are not orthogonal outside of the unit circle.\n\n'
+        'Invert: By default the input zernike coefficients describe the optical path '
+        'length (OPL) of the printed optic. If you want the Zernike coefficients to describe\nthe wavefront'
+        'that is created by the optic then you will want to have the "Invert" box checked, this will effectively multiply all of the coefficients by -1.')
         dialog.layout.addWidget(dialog.text,1,1)
         dialog.setLayout(dialog.layout)
         dialog.setWindowTitle('Help')

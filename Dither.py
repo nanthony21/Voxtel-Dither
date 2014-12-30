@@ -11,23 +11,37 @@ from scipy import misc
 import bisect
 
 class Dither:
-    
+    '''This Class is given:
+       ideal: a numpy array representing a map of the ideal OPL of the desired optic.
+       height: the number of printed layers of the optic.
+       pheight: the height of each layer in microns.
+       n1 and n2: the indices of refraction of the two optical inks.
+       idealn: This optional variable will overide any input for the "ideal" variable.
+       It should be a numpy array representing a map of the ideal index of refraction of printed part.'''
     def __init__(self,ideal,height,pheight,n1,n2,idealn=None):       
         self.height=height
         
         self.ideal=ideal-np.nanmin(ideal)
-        self.ypix=ideal.shape[0]
-        self.xpix=ideal.shape[1]
-        
-        X = np.linspace(-1,1,self.xpix)
-        Y = np.linspace(-1,1,self.ypix)
-        x, y =np.meshgrid(X,Y)
-        self.r =np.sqrt(x**2+y**2)        
+
+       
         
         
         self.pheight=pheight
         self.n1=n1
         self.n2=n2
+        
+        if idealn==None:
+            self.idealn=self.ideal/(self.height*self.pheight)+self.n1
+        else:
+            self.idealn=idealn
+            
+        self.ypix=self.idealn.shape[0]    
+        self.xpix=self.idealn.shape[1]
+        
+        X = np.linspace(-1,1,self.xpix)
+        Y = np.linspace(-1,1,self.ypix)
+        x, y =np.meshgrid(X,Y)
+        self.r =np.sqrt(x**2+y**2) 
         
         self.aperind=[]
         for i in range(self.ypix):
@@ -40,10 +54,7 @@ class Dither:
         self.possiblevalues=[]
         for i in xrange(self.height+1):
             self.possiblevalues.append((i*self.n2+(self.height-i)*self.n1)/(self.height))
-        if idealn==None:
-            self.idealn=self.ideal/(self.height*self.pheight)+self.n1
-        else:
-            self.idealn=idealn
+
         self.__floyddither()
     
         
@@ -88,7 +99,8 @@ class Dither:
                         pass
         print "Done Dithering"
     def calc3d(self):         
-              
+        '''This function takes the 2d dithered image and converts it to a 3d array of 1's and 0's
+        where 1 represend a voxel of n1 and 0 represents a voxel of n2'''
 
         self.x1=np.uint16(np.round(self.height*(self.dithered-self.n2)/(self.n1-self.n2)))
     
@@ -132,5 +144,6 @@ class Dither:
          ax3=fig.add_subplot(2,2,3)
          ax.imshow(self.idealn)
          ax3.imshow(self.dithered)
+         plt.show()
          
 
