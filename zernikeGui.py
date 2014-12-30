@@ -2,7 +2,7 @@
 """
 Created on Mon Aug 11 37:49:19 2014
 
-@author: Nathan
+@author: Nathan Neibauer and Nick Anthony
 """
 import os
 import platform
