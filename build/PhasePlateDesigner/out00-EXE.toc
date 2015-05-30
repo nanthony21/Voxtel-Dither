@@ -1,0 +1,9 @@
+('C:\\Users\\Nick\\Documents\\GitHub\\Voxtel-Dither\\dist\\PhasePlateDesigner.exe',
+ False,
+ False,
+ None,
+ None,
+ [],
+ None,
+ False,
+ 1432993614L)
